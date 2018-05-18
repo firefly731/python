@@ -53,9 +53,9 @@ def walk_value(IP, PORT, COMMUNITY, OID_ref):
                 tableau.append(str(varBind))
     return tableau
 
-IP = '172.20.1.36'
+IP = 'xxxxx'
 PORT = 16109
-COMMUNITY = 'uds7wVvB'
+COMMUNITY = 'xxxxx'
 OID_hostname = '1.3.6.1.2.1.1.5.0'
 OID_serial = '1.3.6.1.4.1.11.2.36.1.1.2.9.0'
 OID_firmware = '1.3.6.1.4.1.11.2.36.1.1.5.1.1.11.1'
