@@ -12,7 +12,8 @@ OID_firmware = '1.3.6.1.4.1.11.2.36.1.1.5.1.1.11.1'
 OID_description = '1.3.6.1.2.1.47.1.1.1.1.2.1'
 OID_ports_up = '1.3.6.1.2.1.2.2.1.8'
 OID_ports_poe = '1.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3'
-OID_MAC = '1.3.6.1.2.1.17.4.3.1.2'
+OID_MAC = '1.3.6.1.2.1.17.4.3.1.2' #mac en décimal / numéro de port
+OID_MAC2 = '1.3.6.1.2.1.17.4.3.1.1' #mac en décimal / mac en héxa
 
 #SNMPGET
 def get_value(IP, PORT, COMMUNITY, OID_ref):
@@ -83,30 +84,17 @@ NB_SWITCH = int(NB_SWITCH)
 PORT_MAC = walk_value(IP, PORT, COMMUNITY, OID_MAC)
 """
 recup
-SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.183 = 2', 'SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.185 = 4'
+SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.183 = 2', 'SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.185 = 4' ==>  si pas de correspondance sur le port recherché il n'y a pas de MAC
 """
 PORT_LINK = walk_value(IP, PORT, COMMUNITY, OID_ports_up)
 """
 recup
-iso.3.6.1.2.1.2.2.1.8.1 = INTEGER: 1 (UP)
-iso.3.6.1.2.1.2.2.1.8.2 = INTEGER: 1
-iso.3.6.1.2.1.2.2.1.8.3 = INTEGER: 1
-iso.3.6.1.2.1.2.2.1.8.4 = INTEGER: 1
-iso.3.6.1.2.1.2.2.1.8.5 = INTEGER: 2 (DOWN)
-iso.3.6.1.2.1.2.2.1.8.6 = INTEGER: 2
-iso.3.6.1.2.1.2.2.1.8.7 = INTEGER: 2
-iso.3.6.1.2.1.2.2.1.8.8 = INTEGER: 2
+['SNMPv2-SMI::mib-2.2.2.1.8.1 = 1', 'SNMPv2-SMI::mib-2.2.2.1.8.2 = 1'   ==>   1 port up, 2 port down
 """
 PORT_POE = walk_value(IP, PORT, COMMUNITY, OID_ports_poe)
 """
 recup
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.1 = INTEGER: 5301 (POE)
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.2 = INTEGER: 5385
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.3 = INTEGER: 5257
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.4 = INTEGER: 5222
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.5 = INTEGER: 0 (NO POE)
-iso.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3.1.6 = INTEGER: 0
-
+['SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.1 = 5301', 'SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.2 = 5385'   ==>  0 pas de POE sinon POE
 """
 while NB_SWITCH != 0:
     Switch_key = get_value(IP, PORT, COMMUNITY, OID_product)
@@ -117,7 +105,29 @@ while NB_SWITCH != 0:
         print(Switch_key)
     else:
         NB_PORT = Switch_HP[Switch_key][1]
-            
+        for i in range(NB_PORT):
+            poe_on = re.search(r'({0} = )(\d*)'.format(i+1), str(PORT_POE))
+            link_on = re.search(r'({0} = )(\d)'.format(i+1), str(PORT_LINK))
+            mac_on = re.search(r'( = )({0})'.format(i+1), str(PORT_MAC))
+            if int(poe_on.group(2)) != 0 and int(link_on.group(2)) == 2:
+                print("POE activé mais pas de LINK détecté sur port {0}".format(i+1))
+            elif int(poe_on.group(2)) != 0 and mac_on is None:
+                print("POE activé mais pas de MAC détectée sur port {0}".format(i+1))
+            else:
+                print("Aucun problème détecté")
+                
+"""
+            if int(poe_on.group(2)) == 0:
+                print("poe désactivé port {0}".format(i+1))
+            else:
+                print("poe activé port {0}".format(i+1))
+            if int(link_on.group(2)) == 1:
+                print("link ok port {0}".format(i+1))
+            else:
+                print("link ko port {0}".format(i+1))
+            if mac_on is None:
+                print("pas de mac détecté port {0}".format(i+1))
+            else:
+                print("mac détecté port {0}".format(i+1))
+"""
 
-# mac table to port : 1.3.6.1.2.1.17.4.3.1.2
-# mac table hexa : 1.3.6.1.2.1.17.4.3.1.1
