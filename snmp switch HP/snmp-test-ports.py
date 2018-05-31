@@ -67,7 +67,6 @@ Switch_HP = {"J9776A":(2530, 24, True, False),
             "J9777A":(2530, 8, True, False),
             "J9774A":(2530, 8, True, True)}
 
-PORT = 16101
 
 IP = input("Veuillez saisir l'IP : ")
 while re.search(r'^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$', IP) is None:
@@ -75,62 +74,81 @@ while re.search(r'^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4
 
 COMMUNITY = input("Veuillez saisir la communauté SNMP : ")
 
-NB_SWITCH = input("Veuillez saisir le nombre de SWITCH : ")
-while re.search(r'^[1-9][0-9]?$', NB_SWITCH) is None:
-    NB_SWITCH = input("Veuillez saisir un nombre valide : ")
-
-NB_SWITCH = int(NB_SWITCH)
+INVALID = True
+while INVALID == True:
+    NB_SWITCH_OU_PORT = input("Veuillez saisir le nombre de switch à interroger ou un port spécifique  : ")
+    if re.search(r'^161[0-9]{2}$', NB_SWITCH_OU_PORT) is not None:
+        PORT = int(NB_SWITCH_OU_PORT)
+        NB_SWITCH = 1
+        INVALID = False
+    elif re.search(r'^[1-9][0-9]?$', NB_SWITCH_OU_PORT) is not None:
+        PORT = 16101
+        NB_SWITCH = int(NB_SWITCH_OU_PORT)
+        INVALID = False
+    else:
+        print("Veuillez saisir une valeur correcte")
 
 for n in range(NB_SWITCH):
     
-    PORT += n
+    ERROR_COMM = False
 
     hostname = get_value(IP, PORT, COMMUNITY, OID_hostname)
-
-    PORT_MAC = walk_value(IP, PORT, COMMUNITY, OID_MAC)
-    """
-    recup
-    SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.183 = 2', 'SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.185 = 4' ==>  si pas de correspondance sur le port recherché il n'y a pas de MAC
-    """
-    PORT_LINK = walk_value(IP, PORT, COMMUNITY, OID_ports_up)
-    """
-    recup
-    ['SNMPv2-SMI::mib-2.2.2.1.8.1 = 1', 'SNMPv2-SMI::mib-2.2.2.1.8.2 = 1'   ==>   1 port up, 2 port down
-    """
-    PORT_POE = walk_value(IP, PORT, COMMUNITY, OID_ports_poe)
-    """
-    recup
-    ['SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.1 = 5301', 'SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.2 = 5385'   ==>  0 pas de POE sinon POE
-    """
-    Switch_key = get_value(IP, PORT, COMMUNITY, OID_product)
-
-    ERROR = 0
-
-    if "J9" not in str(Switch_key):
-        print("Une erreur s'est produite : ")
-        print(Switch_key)
+    if "sw" not in str(hostname):
+        print("Connexion impossible sur PORT : {0}".format(PORT))
+        ERROR_COMM = True
     else:
         print("Switch {0}".format(hostname))
+        Switch_key = get_value(IP, PORT, COMMUNITY, OID_product)
+        if "J9" not in str(Switch_key):
+            print("Une erreur s'est produite : impossible de récupérer le numéro de produit")
+            ERROR_COMM = True
+        else:
+            PORT_LINK = walk_value(IP, PORT, COMMUNITY, OID_ports_up)
+            #['SNMPv2-SMI::mib-2.2.2.1.8.1 = 1', 'SNMPv2-SMI::mib-2.2.2.1.8.2 = 1'   ==>   1 port up, 2 port down
+            if "2.2.2.1.8" not in str(PORT_LINK):
+                print("Une erreur s'est produite : impossible de récupérer l'état des liens")
+                ERROR_COMM = True
+            else:
+                PORT_MAC = walk_value(IP, PORT, COMMUNITY, OID_MAC)
+                #SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.183 = 2', 'SNMPv2-SMI::mib-2.17.4.3.1.2.232.57.53.241.205.185 = 4' ==>  si pas de correspondance sur le port recherché il n'y a pas de MAC
+                if "2.17.4.3.1.2" not in str(PORT_MAC):
+                    print("Une erreur s'est produite : impossible de récupérer la table ARP")
+                    ERROR_COMM = True
+                else:
+                    if Switch_HP[Switch_key][3] == True: #test si switch est POE
+                        PORT_POE = walk_value(IP, PORT, COMMUNITY, OID_ports_poe)
+                        #['SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.1 = 5301', 'SNMPv2-SMI::enterprises.11.2.14.11.1.9.1.1.1.3.1.2 = 5385'   ==>  0 pas de POE sinon POE
+                        if "11.2.14.11.1.9.1.1.1.3.1" not in str(PORT_POE):
+                            print("Une erreur s'est produite : impossible de récupérer l'état du POE")
+                            ERROR_COMM = True
+
+    PORT += 1
+
+    ERROR = False
+
+    if ERROR_COMM == False:
         NB_PORT = Switch_HP[Switch_key][1]
         for i in range(NB_PORT):
-            poe_on = re.search(r'({0} = )(\d*)'.format(i+1), str(PORT_POE))
             link_on = re.search(r'({0} = )(\d)'.format(i+1), str(PORT_LINK))
             mac_on = re.search(r'( = )({0})'.format(i+1), str(PORT_MAC))
-            if poe_on is not None:
+            if int(link_on.group(2)) == 1 and mac_on is None:
+                print("LINK activé mais pas de MAC détectée sur port {0}".format(i+1))
+                ERROR = True
+            if Switch_HP[Switch_key][3] == True: #test si switch est POE 
+                poe_on = re.search(r'({0} = )(\d*)'.format(i+1), str(PORT_POE))
                 if int(poe_on.group(2)) != 0 and int(link_on.group(2)) == 2:
                     print("POE activé mais pas de LINK détecté sur port {0}".format(i+1))
-                    ERROR = 1
+                    ERROR = True
                 if int(poe_on.group(2)) != 0 and mac_on is None:
                     print("POE activé mais pas de MAC détectée sur port {0}".format(i+1))
-                    ERROR = 1
-        if ERROR == 0:
+                    ERROR = True
+        if ERROR == False:
             print("Aucun problème détecté")
 
                 
 """
 reste counters pas de link
 ports error
-test connexion snmp avant de faire 'autres requetes
-verif site 11618 pas scan switch 3 ...
+test site 11618 switch 4 erreur port 13 ...
 """
 
