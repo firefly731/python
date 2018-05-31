@@ -11,7 +11,8 @@ OID_serial = '1.3.6.1.4.1.11.2.36.1.1.2.9.0'
 OID_firmware = '1.3.6.1.4.1.11.2.36.1.1.5.1.1.11.1'
 OID_description = '1.3.6.1.2.1.47.1.1.1.1.2.1'
 OID_ports_up = '1.3.6.1.2.1.2.2.1.8'
-OID_ports_poe = '1.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3'
+OID_ports_poe = '1.3.6.1.4.1.11.2.14.11.1.9.1.1.1.3' #0 ou puissance en mW
+OID_ports_poe2 = '1.3.6.1.2.1.105.1.1.1.6' #1 (disabled) 2 (searching) 3 (delivering power) 4 (fault) 5 (testing) 6 (other fault)
 OID_MAC = '1.3.6.1.2.1.17.4.3.1.2' #mac en décimal / numéro de port
 OID_MAC2 = '1.3.6.1.2.1.17.4.3.1.1' #mac en décimal / mac en héxa
 
@@ -99,7 +100,7 @@ for n in range(NB_SWITCH):
     else:
         print("Switch {0}".format(hostname))
         Switch_key = get_value(IP, PORT, COMMUNITY, OID_product)
-        if "J9" not in str(Switch_key):
+        if Switch_key not in Switch_HP:
             print("Une erreur s'est produite : impossible de récupérer le numéro de produit")
             ERROR_COMM = True
         else:
@@ -149,6 +150,7 @@ for n in range(NB_SWITCH):
 """
 reste counters pas de link
 ports error
+modifier programme avec OID_ports_poe2 (+ simple)
 test site 11618 switch 4 erreur port 13 ...
 """
 
