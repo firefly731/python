@@ -49,25 +49,27 @@ while INVALID == True:
         PORT = int(NB_SWITCH_OU_PORT)
         NB_SWITCH = 1
         INVALID = False
+        print("\n")
     elif re.search(r'^[1-9][0-9]?$', NB_SWITCH_OU_PORT) is not None:
         PORT = 16101
         NB_SWITCH = int(NB_SWITCH_OU_PORT)
         INVALID = False
+        print("\n")
     else:
         print("Veuillez saisir une valeur correcte")
 
 for n in range(NB_SWITCH):
     
     session = Session(hostname=IP, community=COMMUNITY, version=2, remote_port=PORT)
-    PORT += 1    
     ERROR_COMM = False
 
-    hostname = session.get(OID_hostname).value
-    if "sw" not in str(hostname):
+    try:
+        hostname = session.get(OID_hostname).value
+        print("Switch {0}".format(hostname))
+    except:
         print("Connexion impossible sur PORT : {0}".format(PORT))
         ERROR_COMM = True
-    else:
-        print("Switch {0}".format(hostname))
+        
 
     if ERROR_COMM == False:
         Switch_key = session.get(OID_product).value
@@ -112,9 +114,11 @@ for n in range(NB_SWITCH):
 
         if ERROR == False:
             print("Aucun problème détecté")
+    print("\n")        
+    PORT += 1    
+
 
 """
-reste counters pas de link
 modifier programme avec OID_ports_poe2 (+ simple)
 test site 11618 switch 4 erreur port 13 ...
 """
