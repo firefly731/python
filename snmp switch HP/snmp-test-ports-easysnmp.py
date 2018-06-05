@@ -44,7 +44,7 @@ COMMUNITY = input("Veuillez saisir la communauté SNMP : ")
 
 INVALID = True
 while INVALID == True:
-    NB_SWITCH_OU_PORT = input("Veuillez saisir le nombre de switch à interroger ou un port spécifique  : ")
+    NB_SWITCH_OU_PORT = input("Veuillez saisir le nombre de switch à interroger ou un numéro de port (16101, 16104, ...)  : ")
     if re.search(r'^161[0-9]{2}$', NB_SWITCH_OU_PORT) is not None:
         PORT = int(NB_SWITCH_OU_PORT)
         NB_SWITCH = 1
@@ -119,6 +119,7 @@ for n in range(NB_SWITCH):
 
 
 """
+test counters ?
 modifier programme avec OID_ports_poe2 (+ simple)
 test site 11618 switch 4 erreur port 13 ...
 """
