@@ -160,26 +160,43 @@ for n in range(NB_SWITCH):
     if ERROR_COMM == False:
         ERROR = False
         NB_PORT = Switch_HP[str(Switch_key)][1]
+        LIST_OIDport = []
+        LIST_OIDdrop = []
+        LIST_OIDerreur = []
+        LIST_OIDpoe = []
+        LIST_port = []
+        LIST_drop = []
+        LIST_erreur = []
+        LIST_poe = []
+
         for i in range(NB_PORT):
-            link_on = session.snmpget("{0}.{1}".format(OID_ports_up, i+1))
+            LIST_OIDport.append("{0}.{1}".format(OID_ports_up, (i+1)))
+            LIST_OIDdrop.append("{0}.{1}".format(OID_drop, i+1))
+            LIST_OIDerreur.append("{0}.{1}".format(OID_error, i+1))
+            LIST_OIDpoe.append("{0}.{1}".format(OID_ports_poe, i+1))
+        
+        LIST_port = session.snmpget(*LIST_OIDport)
+        LIST_drop = session.snmpget(*LIST_OIDdrop)
+        LIST_erreur = session.snmpget(*LIST_OIDerreur)
+        if Switch_HP[str(Switch_key)][3] == True: #test si switch est POE
+            LIST_poe = session.snmpget(*LIST_OIDpoe)
+
+        for i in range(NB_PORT):
             mac_on = re.search(r'( = )({0})'.format(i+1), str(PORT_MAC))
-            if int(link_on) == 1 and mac_on is None:
+            if int(LIST_port[i]) == 1 and mac_on is None:
                 print("LINK activé mais pas de MAC détectée sur port {0}".format(i+1))
                 ERROR = True
-            drop_on = session.snmpget("{0}.{1}".format(OID_drop, (i+1)))
-            if int(drop_on) != 0:
+            if int(LIST_drop[i]) != 0:
                 print("DROP détecté sur port {0}".format(i+1))
                 ERROR = True
-            error_on = session.snmpget("{0}.{1}".format(OID_error, (i+1)))
-            if int(error_on) != 0:
+            if int(LIST_erreur[i]) != 0:
                 print("ERREUR détecté sur port {0}".format(i+1))
                 ERROR = True
             if Switch_HP[str(Switch_key)][3] == True: #test si switch est POE 
-                poe_on = session.snmpget("{0}.{1}".format(OID_ports_poe, (i+1)))
-                if int(poe_on) != 0 and int(link_on) == 2:
+                if int(LIST_poe[i]) != 0 and int(LIST_port[i]) == 2:
                     print("POE activé mais pas de LINK détecté sur port {0}".format(i+1))
                     ERROR = True
-                if int(poe_on) != 0 and mac_on is None:
+                if int(LIST_poe[i]) != 0 and mac_on is None:
                     print("POE activé mais pas de MAC détectée sur port {0}".format(i+1))
                     ERROR = True
 
