@@ -7,6 +7,12 @@ import time
 import re
 import getpass
 
+def cleanThatStuffUp(message):
+    procurve_re1 = re.compile(r'(\[\d+[HKJ])|(\[\?\d+[hl])|(\[\d+)|(\;\d+\w?)|(\\x1b)')
+    message = procurve_re1.sub("", message)
+    print(message)
+
+
 def recieveData(sleep=4): #change sleep value if needed
     tCheck = 0
     while not conn.recv_ready():
@@ -70,8 +76,10 @@ for n in range(NB_Switch):
         conn.send("\n")
         recieveData()
         name = conn.recv(9999).decode("utf-8").split("\n")
+
         name = name[-1]
-        print(name.strip())
+        name = cleanThatStuffUp(str(name))
+        print(name)
         print("")
 
         conn.send("show interfaces\n")
@@ -111,10 +119,10 @@ for n in range(NB_Switch):
                 print("LINK UP but no mac address on port {0}".format(nb+1))
                 ERROR = True
             if interfaces[nb][4] != "0":
-                    print("DROP detected on port {0}".format(nb+1))
+                    print("{0} DROP detected on port {1}".format(interfaces[nb][4], nb+1))
                     ERROR = True
             if interfaces[nb][3] != "0":
-                    print("ERROR detected on port {0}".format(nb+1))
+                    print("{0} ERROR detected on port {1}".format(interfaces[nb][3], nb+1))
                     ERROR = True
             if interfaces_poe and nb+1 <= len(interfaces_poe): #check if switch is POE and avoid link port
                 if "Delivering" in interfaces_poe[nb] and interfaces_brief[nb][4] == "Down":
@@ -144,3 +152,5 @@ for n in range(NB_Switch):
         print("Unable to retrieve values correctly, please try to increase sleep when calling func recieveData")
     except:
         print("unknown error occured")
+
+input("Enter enter to quit ....")
