@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.5
 # -*- coding: utf-8 -*-
 
 
@@ -13,7 +13,7 @@ def cleanThatStuffUp(message):
     print(message)
 
 
-def recieveData(sleep=4): #change sleep value if needed
+def recieveData(sleep=5): #change sleep value if needed
     tCheck = 0
     while not conn.recv_ready():
         time.sleep(sleep)
@@ -110,7 +110,7 @@ for n in range(NB_Switch):
         for nb in range(NB_port):
             conn.send("\n") #enter otherwise sometimes next command not complete
             conn.send("show mac-address {}\n".format(nb+1))
-            recieveData(2) #change sleep value if needed
+            recieveData(1) #change sleep value if needed
             MAC = conn.recv(9999).decode("utf-8").split("\n")
             if interfaces_brief[nb][4] == "Down" and interfaces[nb][1] != "0":
                 print("LINK DOWN but traffic was detected on port {0}".format(nb+1))
