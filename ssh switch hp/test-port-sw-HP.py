@@ -7,13 +7,7 @@ import time
 import re
 import getpass
 
-def cleanThatStuffUp(message):
-    procurve_re1 = re.compile(r'(\[\d+[HKJ])|(\[\?\d+[hl])|(\[\d+)|(\;\d+\w?)|(\\x1b)')
-    message = procurve_re1.sub("", message)
-    print(message)
-
-
-def recieveData(sleep=5): #change sleep value if needed
+def recieveData(sleep=0.5): #change sleep value if needed
     tCheck = 0
     while not conn.recv_ready():
         time.sleep(sleep)
@@ -73,14 +67,19 @@ for n in range(NB_Switch):
         ssh.connect(hostname, username=username, password=password, port=port, timeout=10)
 
         conn = ssh.invoke_shell()
+
         conn.send("\n")
+        conn.recv(9999)
+
+        conn.send("show system information\n")
+        conn.send(" ")
         recieveData()
         name = conn.recv(9999).decode("utf-8").split("\n")
-
-        name = name[-1]
-        name = cleanThatStuffUp(str(name))
-        print(name)
-        print("")
+        for elem in name:
+            if "System Name" in elem:
+                print(elem)
+        
+        print("\n")
 
         conn.send("show interfaces\n")
         conn.send(" ")
@@ -108,35 +107,36 @@ for n in range(NB_Switch):
         ERROR = False
 
         for nb in range(NB_port):
-            conn.send("\n") #enter otherwise sometimes next command not complete
+            #conn.send("\n") #enter otherwise sometimes next command not complete
             conn.send("show mac-address {}\n".format(nb+1))
-            recieveData(1) #change sleep value if needed
+            recieveData()
             MAC = conn.recv(9999).decode("utf-8").split("\n")
-            if interfaces_brief[nb][4] == "Down" and interfaces[nb][1] != "0":
-                print("LINK DOWN but traffic was detected on port {0}".format(nb+1))
-                ERROR = True
-            if interfaces_brief[nb][4] == "Up" and MAC[5].strip() == "":
-                print("LINK UP but no mac address on port {0}".format(nb+1))
-                ERROR = True
-            if interfaces[nb][4] != "0":
-                    print("{0} DROP detected on port {1}".format(interfaces[nb][4], nb+1))
+            try:
+                if interfaces_brief[nb][4] == "Down" and interfaces[nb][1] != "0":
+                    print("LINK DOWN but traffic was detected on port {0}".format(nb+1))
                     ERROR = True
-            if interfaces[nb][3] != "0":
-                    print("{0} ERROR detected on port {1}".format(interfaces[nb][3], nb+1))
+                if interfaces_brief[nb][4] == "Up" and MAC[5].strip() == "":
+                    print("LINK UP but no mac address on port {0}".format(nb+1))
                     ERROR = True
-            if interfaces_poe and nb+1 <= len(interfaces_poe): #check if switch is POE and avoid link port
-                if "Delivering" in interfaces_poe[nb] and interfaces_brief[nb][4] == "Down":
-                        print("POE detected but no LINK on port {0}".format(nb+1))
+                if interfaces[nb][4] != "0":
+                        print("{0} DROP detected on port {1}".format(interfaces[nb][4], nb+1))
                         ERROR = True
-                if "Delivering" in interfaces_poe[nb] and MAC[5].strip() == "":
-                        print("POE detected but no MAC address on port {0}".format(nb+1))
-                        ERROR = True        
+                if interfaces[nb][3] != "0":
+                        print("{0} ERROR detected on port {1}".format(interfaces[nb][3], nb+1))
+                        ERROR = True
+                if interfaces_poe and nb+1 <= len(interfaces_poe): #check if switch is POE and avoid link port
+                    if "Delivering" in interfaces_poe[nb] and interfaces_brief[nb][4] == "Down":
+                            print("POE detected but no LINK on port {0}".format(nb+1))
+                            ERROR = True
+                    if "Delivering" in interfaces_poe[nb] and MAC[5].strip() == "":
+                            print("POE detected but no MAC address on port {0}".format(nb+1))
+                            ERROR = True 
+            except IndexError:
+                print("Problem to retrieve MAC information")
         if ERROR == False:
             print("No problem detected")
         print("\n")        
-        port += 1
-
-        print("")    
+        print("")
 
         ssh.close()
 
@@ -148,9 +148,8 @@ for n in range(NB_Switch):
         print(str(e))
     except paramiko.ssh_exception.SSHException as e:
         print(str(e))
-    except IndexError:
-        print("Unable to retrieve values correctly, please try to increase sleep when calling func recieveData")
-    except:
-        print("unknown error occured")
+    except Exception as e:
+        print(e)
+    port += 1
 
 input("Enter enter to quit ....")
