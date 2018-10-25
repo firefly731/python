@@ -1,4 +1,4 @@
-#!/usr/bin/python3.5
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 

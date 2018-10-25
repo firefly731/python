@@ -1,4 +1,4 @@
-#!/usr/bin/python3.5
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import paramiko #library for ssh connection
@@ -34,13 +34,17 @@ while nb == False:
 
 nb = False
 while nb == False:
-    vlan = input("Enter the number of VLAN : ")
+    vlan = input("Enter VLAN number : ")
     try:
         vlan = int(vlan)
     except ValueError:
         print("Please enter a number")
     else:
         nb = True
+
+name_vlan = input("Enter VLAN name : ")
+while re.search(r'^[\w-]+$', name_vlan) is None:
+    name_vlan = input("Enter a valid VLAN name : ")
 
 i = 1
 while i <= NB_Switch:
@@ -54,6 +58,8 @@ while i <= NB_Switch:
         conn.send("configure terminal\n")
         time.sleep(0.5)
         conn.send("vlan {0}\n".format(vlan))
+        time.sleep(0.5)
+        conn.send("name {0}\n".format(name_vlan))
         time.sleep(0.5)
         conn.send("tagged all\n")
         time.sleep(0.5)
