@@ -70,7 +70,7 @@ while other_vlan == 1:
 
     i = 1
     while i <= NB_Switch:
-        port = 22 #00 + i
+        port = 2200 + i
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
